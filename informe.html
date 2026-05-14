@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Taller 3 - Reconocimiento de Patrones</title>
+<style>
+  body { font-family: "Times New Roman", serif; font-size: 12pt; margin: 0; padding: 0; color: #000; }
+  .page { max-width: 750px; margin: 0 auto; padding: 60px 70px; }
+  h1 { text-align: center; font-size: 20pt; margin-bottom: 4px; }
+  h2 { font-size: 14pt; margin-top: 32px; margin-bottom: 8px; border-bottom: 1px solid #000; padding-bottom: 4px; }
+  h3 { font-size: 12pt; margin-top: 20px; margin-bottom: 6px; }
+  .authors { text-align: center; margin: 10px 0 4px 0; font-size: 13pt; }
+  .date { text-align: center; margin-bottom: 30px; font-size: 12pt; }
+  .institution { text-align: center; font-size: 11pt; color: #333; margin-bottom: 6px; }
+  p { text-align: justify; line-height: 1.6; margin: 8px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 11pt; }
+  th { background: #222; color: #fff; padding: 8px 10px; text-align: left; }
+  td { border: 1px solid #aaa; padding: 7px 10px; vertical-align: top; }
+  tr:nth-child(even) { background: #f4f4f4; }
+  code, pre { font-family: "Courier New", monospace; font-size: 10.5pt; background: #f0f0f0; }
+  pre { padding: 10px 14px; border-left: 3px solid #444; margin: 10px 0; overflow-x: auto; }
+  .check { color: #1a7a1a; font-weight: bold; }
+  .cross { color: #c00; font-weight: bold; }
+  .indent { margin-left: 24px; }
+  ul { line-height: 1.7; }
+  li { margin-bottom: 4px; }
+  .highlight { background: #fffbe6; border: 1px solid #e0c000; padding: 8px 12px; margin: 10px 0; }
+  @media print {
+    .page { padding: 40px 50px; }
+    body { font-size: 11pt; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Taller 3: Reconocimiento de Patrones</h1>
+<p class="institution">Universidad del Valle &mdash; Programaci&oacute;n Funcional y Concurrente</p>
+<p class="authors">Juan Sebasti&aacute;n Tapia &nbsp;&nbsp;&bull;&nbsp;&nbsp; Jairo Tegue</p>
+<p class="date">Mayo 2026</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>1. Informe de uso del reconocimiento de patrones</h2>
+
+<h3>1.1 Tabla de uso por funci&oacute;n</h3>
+
+<table>
+  <tr>
+    <th>Funci&oacute;n</th>
+    <th>Usa reconocimiento de patrones</th>
+    <th>Justificaci&oacute;n</th>
+  </tr>
+  <tr>
+    <td><code>mostrar</code></td>
+    <td class="check">&#10003; S&iacute;</td>
+    <td>Cada caso de <code>Expr</code> produce una representaci&oacute;n distinta. El <code>match</code> sobre el tipo algebraico es la forma natural y exhaustiva de cubrir todos los constructores.</td>
+  </tr>
+  <tr>
+    <td><code>derivar</code></td>
+    <td class="check">&#10003; S&iacute;</td>
+    <td>Las reglas de derivaci&oacute;n del Cuadro 1 corresponden exactamente a cada constructor de <code>Expr</code>. El reconocimiento de patrones permite aplicar la regla correcta de forma directa y sin ambig&uuml;edad.</td>
+  </tr>
+  <tr>
+    <td><code>evaluar</code></td>
+    <td class="check">&#10003; S&iacute;</td>
+    <td>La evaluaci&oacute;n num&eacute;rica depende del tipo de nodo: un <code>Numero</code> retorna su valor, un <code>Atomo</code> retorna <code>v</code>, y los operadores combinan recursivamente. El <code>match</code> distingue cada caso de forma clara.</td>
+  </tr>
+  <tr>
+    <td><code>limpiar</code></td>
+    <td class="check">&#10003; S&iacute;</td>
+    <td>Las simplificaciones algebraicas (0+e=e, 1*e=e, etc.) dependen tanto del constructor externo como de los valores de los subárboles ya limpiados. Se usa <code>match</code> anidado sobre tuplas para combinar ambos niveles de an&aacute;lisis.</td>
+  </tr>
+  <tr>
+    <td><code>raizNewton</code></td>
+    <td class="cross">&#10007; No</td>
+    <td>El m&eacute;todo de Newton es un algoritmo num&eacute;rico iterativo. La estructura de datos relevante es un <code>Double</code>, no un &aacute;rbol algebraico. La iteraci&oacute;n se implementa con recursi&oacute;n de cola (<code>@tailrec</code>), que es la forma funcional equivalente a un bucle, sin necesidad de deconstruir ning&uacute;n tipo algebraico. El enunciado tambi&eacute;n indica expl&iacute;citamente que esta funci&oacute;n es &ldquo;iterativa&rdquo;, no estructuralmente recursiva.</td>
+  </tr>
+</table>
+
+<h3>1.2 Apreciaci&oacute;n sobre el reconocimiento de patrones</h3>
+
+<p>El reconocimiento de patrones es una de las herramientas m&aacute;s potentes de la programaci&oacute;n funcional. Permite expresar transformaciones sobre tipos algebraicos de forma exhaustiva, legible y verificable por el compilador: si se agrega un nuevo constructor al trait <code>Expr</code>, el compilador advierte inmediatamente sobre los <code>match</code> incompletos, evitando errores silenciosos.</p>
+
+<p>En este taller, el uso de <code>match</code> convirti&oacute; reglas matem&aacute;ticas formales (como las del Cuadro 1) en c&oacute;digo casi isom&oacute;rfico: cada l&iacute;nea del c&oacute;digo corresponde directamente a una regla de derivaci&oacute;n. Esto hace que el c&oacute;digo sea m&aacute;s f&aacute;cil de verificar, depurar y extender que una cadena de condicionales <code>if/else</code>.</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>2. Informe de correcci&oacute;n</h2>
+
+<h3>2.1 Argumentaci&oacute;n sobre la correcci&oacute;n</h3>
+
+<p>La correcci&oacute;n de las funciones se argumenta por <strong>inducci&oacute;n estructural</strong> sobre el tipo <code>Expr</code>, cuya definici&oacute;n recursiva establece:</p>
+<ul>
+  <li><strong>Casos base:</strong> <code>Numero(d)</code>, <code>Atomo(x)</code></li>
+  <li><strong>Casos inductivos:</strong> <code>Suma</code>, <code>Prod</code>, <code>Resta</code>, <code>Div</code>, <code>Expo</code>, <code>Logaritmo</code> &mdash; cada uno construido sobre sub-expresiones m&aacute;s peque&ntilde;as.</li>
+</ul>
+
+<h3>2.1.1 Correcci&oacute;n de <code>mostrar</code></h3>
+
+<p><strong>Propiedad:</strong> para toda expresi&oacute;n <code>e : Expr</code>, <code>mostrar(e)</code> retorna una cadena que representa un&iacute;vocamente la estructura de <code>e</code>, usando par&eacute;ntesis en cada operaci&oacute;n binaria y unaria.</p>
+
+<div class="indent">
+<p><strong>Caso base &mdash; <code>Numero(d)</code>:</strong> retorna <code>d.toString</code>, que es la representaci&oacute;n est&aacute;ndar del flotante. &#10003;</p>
+<p><strong>Caso base &mdash; <code>Atomo(x)</code>:</strong> retorna <code>x.toString</code>, el car&aacute;cter identificador. &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Suma(e1, e2)</code>:</strong> por hip&oacute;tesis inductiva, <code>mostrar(e1)</code> y <code>mostrar(e2)</code> son correctos. La funci&oacute;n retorna <code>"(" + mostrar(e1) + " + " + mostrar(e2) + ")"</code>, que representa la suma sin ambig&uuml;edad gracias a los par&eacute;ntesis externos. &#10003;</p>
+<p>Los casos <code>Prod</code>, <code>Resta</code>, <code>Div</code>, <code>Expo</code> son an&aacute;logos al caso <code>Suma</code>. &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Logaritmo(e1)</code>:</strong> retorna <code>"(lg(" + mostrar(e1) + "))"</code>, representando correctamente el logaritmo natural. &#10003;</p>
+</div>
+<p>Por inducci&oacute;n estructural, <code>mostrar</code> es correcta para toda <code>e : Expr</code>.</p>
+
+<h3>2.1.2 Correcci&oacute;n de <code>derivar</code></h3>
+
+<p><strong>Propiedad:</strong> para toda expresi&oacute;n <code>f : Expr</code> y &aacute;tomo <code>a : Atomo</code>, <code>derivar(f, a)</code> retorna la expresi&oacute;n correspondiente a la derivada de <code>f</code> respecto a <code>a</code>, seg&uacute;n las reglas del Cuadro 1.</p>
+
+<div class="indent">
+<p><strong>Caso base &mdash; <code>Numero(d)</code>:</strong> la derivada de una constante es 0. Retorna <code>Numero(0.0)</code>. Correcto por la regla (1). &#10003;</p>
+<p><strong>Caso base &mdash; <code>Atomo(x)</code>:</strong> si <code>x == a.x</code>, la derivada de la variable respecto a s&iacute; misma es 1; retorna <code>Numero(1.0)</code>. Si <code>x != a.x</code>, el &aacute;tomo es tratado como constante; retorna <code>Numero(0.0)</code>. Correcto por las reglas (1) y (2). &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Suma(e1, e2)</code>:</strong> por hip&oacute;tesis inductiva, <code>derivar(e1, a)</code> y <code>derivar(e2, a)</code> son correctos. Retorna <code>Suma(derivar(e1,a), derivar(e2,a))</code>, que corresponde a la regla (3): <em>(f+g)' = f'+g'</em>. &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Resta(e1, e2)</code>:</strong> an&aacute;logo, aplica la regla (4). &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Prod(e1, e2)</code>:</strong> retorna <code>Suma(Prod(derivar(e1,a), e2), Prod(e1, derivar(e2,a)))</code>, que es la regla del producto (5): <em>(f&middot;g)' = f'&middot;g + f&middot;g'</em>. &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Div(e1, e2)</code>:</strong> retorna <code>Div(Resta(Prod(f',g), Prod(f,g')), Prod(g,g))</code>, que es la regla del cociente (6): <em>(f/g)' = (f'g &minus; fg') / g&sup2;</em>. &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Logaritmo(e1)</code>:</strong> retorna <code>Div(derivar(e1,a), e1)</code>, que es la regla (7): <em>ln(f)' = f'/f</em>. &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Expo(e1, e2)</code>:</strong> retorna <code>Prod(Expo(f,g), Suma(Div(Prod(f',g),f), Prod(g',Logaritmo(f))))</code>, que es la regla general (8): <em>f<sup>g</sup> &middot; (f'&middot;g/f + g'&middot;ln f)</em>. &#10003;</p>
+</div>
+<p>Por inducci&oacute;n estructural, <code>derivar</code> es correcta para toda <code>f : Expr</code> y <code>a : Atomo</code>.</p>
+
+<h3>2.1.3 Correcci&oacute;n de <code>evaluar</code></h3>
+
+<p><strong>Propiedad:</strong> para toda expresi&oacute;n <code>f : Expr</code>, &aacute;tomo <code>a</code> y valor <code>v : Double</code>, <code>evaluar(f, a, v)</code> retorna el valor num&eacute;rico de <code>f</code> al sustituir <code>a</code> por <code>v</code>.</p>
+
+<div class="indent">
+<p><strong>Caso base &mdash; <code>Numero(d)</code>:</strong> retorna <code>d</code>. La funci&oacute;n constante eval&uacute;a a su valor. &#10003;</p>
+<p><strong>Caso base &mdash; <code>Atomo(x)</code>:</strong> si <code>x == a.x</code> retorna <code>v</code> (sustituci&oacute;n correcta); en otro caso lanza excepci&oacute;n (el enunciado garantiza que s&oacute;lo hay un tipo de &aacute;tomo). &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Suma(e1, e2)</code>:</strong> por H.I., <code>evaluar(e1,a,v)</code> y <code>evaluar(e2,a,v)</code> son correctos. Retorna su suma, que coincide con el valor de la suma de funciones. &#10003;</p>
+<p>Los casos <code>Prod</code>, <code>Resta</code>, <code>Div</code>, <code>Expo</code>, <code>Logaritmo</code> son completamente an&aacute;logos, aplicando el operador matem&aacute;tico correspondiente sobre los resultados recursivos. &#10003;</p>
+</div>
+<p>Por inducci&oacute;n estructural, <code>evaluar</code> es correcta.</p>
+
+<h3>2.1.4 Correcci&oacute;n de <code>limpiar</code></h3>
+
+<p><strong>Propiedad:</strong> para toda expresi&oacute;n <code>f : Expr</code>, <code>limpiar(f)</code> retorna una expresi&oacute;n matem&aacute;ticamente equivalente a <code>f</code>, eliminando ceros y unos innecesarios.</p>
+
+<div class="indent">
+<p><strong>Casos base &mdash; <code>Numero</code>, <code>Atomo</code>:</strong> se retornan sin cambios. Cualquier constante o variable es ya una forma m&iacute;nima. &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Suma(e1, e2)</code>:</strong> se limpian ambos hijos primero (H.I.). Si el resultado izquierdo es <code>Numero(0.0)</code>, se retorna el derecho (0+e = e). Si el derecho es <code>Numero(0.0)</code>, se retorna el izquierdo (e+0 = e). En otro caso se reconstruye <code>Suma</code>. &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Resta(e1, e2)</code>:</strong> si el lado derecho limpio es <code>Numero(0.0)</code>, se retorna el izquierdo (e&minus;0 = e). &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Prod(e1, e2)</code>:</strong> si cualquier factor es <code>Numero(0.0)</code>, el producto es 0. Si alguno es <code>Numero(1.0)</code>, se retorna el otro factor (neutro multiplicativo). &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Div(e1, e2)</code>:</strong> si el numerador es 0, el resultado es 0. Si el denominador es 1, se retorna el numerador. &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Expo(e1, e2)</code>:</strong> cualquier base elevada a 0 es 1; cualquier base elevada a 1 es ella misma. &#10003;</p>
+<p><strong>Caso inductivo &mdash; <code>Logaritmo(e1)</code>:</strong> se limpia el argumento y se reconstruye. &#10003;</p>
+</div>
+<p>La equivalencia matem&aacute;tica est&aacute; garantizada porque todas las simplificaciones son identidades &aacute;lgebr&aacute;icas universalmente v&aacute;lidas. Por inducci&oacute;n estructural, <code>limpiar</code> es correcta.</p>
+
+<h3>2.1.5 Correcci&oacute;n de <code>raizNewton</code></h3>
+
+<p><strong>Propiedad:</strong> dado que <code>ba</code> es una buena aproximaci&oacute;n v&aacute;lida y que la funci&oacute;n <code>f</code> tiene una ra&iacute;z alcanzable desde <code>x0</code>, <code>raizNewton</code> retorna un valor <code>r</code> tal que <code>ba(f, a, r) = true</code>.</p>
+
+<p>La implementaci&oacute;n sigue exactamente la f&oacute;rmula del m&eacute;todo de Newton:</p>
+<pre>x_{i+1} = x_i - f(x_i) / f'(x_i)</pre>
+
+<div class="indent">
+<p><strong>Terminaci&oacute;n:</strong> el m&eacute;todo de Newton converge cuadr&aacute;ticamente cuando la funci&oacute;n es diferenciable, la ra&iacute;z es simple y el punto inicial es suficientemente cercano. Bajo estas condiciones, <code>ba(f, a, x)</code> eventualmente retorna <code>true</code> y la recursi&oacute;n termina.</p>
+<p><strong>Correcci&oacute;n de cada iteraci&oacute;n:</strong> en cada paso, <code>evaluar(f, a, x)</code> calcula <code>f(x)</code> y <code>evaluar(df, a, x)</code> calcula <code>f'(x)</code> (donde <code>df = derivar(f, a)</code>, cuya correcci&oacute;n est&aacute; garantizada por el argumento de la secci&oacute;n 2.1.2). La nueva aproximaci&oacute;n <code>x - f(x)/f'(x)</code> es la f&oacute;rmula de Newton est&aacute;ndar. &#10003;</p>
+<p><strong>Caso base:</strong> si <code>ba(f, a, x0)</code> ya es verdadero, se retorna <code>x0</code> directamente. &#10003;</p>
+<p>La funci&oacute;n interna <code>iter</code> es <strong>recursiva de cola</strong> (<code>@tailrec</code>), lo que garantiza que no hay desbordamiento de pila para un n&uacute;mero razonable de iteraciones.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h3>2.2 Casos de prueba</h3>
+
+<p>Para cada funci&oacute;n se presentan al menos 5 casos donde el valor esperado es conocido y verificable. Los resultados fueron calculados manualmente y confirmados ejecutando <code>pruebas.sc</code> en IntelliJ IDEA.</p>
+
+<h3>2.2.1 Casos de prueba &mdash; <code>mostrar</code></h3>
+
+<table>
+  <tr><th>#</th><th>Entrada</th><th>Valor esperado</th><th>Valor obtenido</th><th>&#10003;</th></tr>
+  <tr><td>1</td><td><code>Numero(5.0)</code></td><td><code>5.0</code></td><td><code>5.0</code></td><td>&#10003;</td></tr>
+  <tr><td>2</td><td><code>Atomo('x')</code></td><td><code>x</code></td><td><code>x</code></td><td>&#10003;</td></tr>
+  <tr><td>3</td><td><code>Suma(Atomo('x'), Numero(2))</code></td><td><code>(x + 2.0)</code></td><td><code>(x + 2.0)</code></td><td>&#10003;</td></tr>
+  <tr><td>4</td><td><code>Logaritmo(Atomo('x'))</code></td><td><code>(lg(x))</code></td><td><code>(lg(x))</code></td><td>&#10003;</td></tr>
+  <tr><td>5</td><td><code>Expo(Atomo('x'), Numero(3))</code></td><td><code>(x ^ 3.0)</code></td><td><code>(x ^ 3.0)</code></td><td>&#10003;</td></tr>
+  <tr><td>6</td><td><code>Prod(Div(expr1,expr2), Resta(expr3,expr4))</code></td><td><code>(((x + 2.0) / (x * x)) * (((x + 2.0) + ((x * x) ^ 5.0)) - (lg(x))))</code></td><td>igual</td><td>&#10003;</td></tr>
+</table>
+<p><em>Suficiencia:</em> los casos cubren todos los constructores del trait <code>Expr</code> (base y recursivos), incluyendo anidamiento profundo. Se considera suficiente para confiar en la correcci&oacute;n de <code>mostrar</code>.</p>
+
+<h3>2.2.2 Casos de prueba &mdash; <code>derivar</code></h3>
+
+<table>
+  <tr><th>#</th><th>Entrada (expr, var)</th><th>Valor esperado</th><th>&#10003;</th></tr>
+  <tr><td>1</td><td><code>Numero(7.0), 'x'</code></td><td><code>Numero(0.0)</code> &rarr; <code>0.0</code></td><td>&#10003;</td></tr>
+  <tr><td>2</td><td><code>Atomo('x'), 'x'</code></td><td><code>Numero(1.0)</code> &rarr; <code>1.0</code></td><td>&#10003;</td></tr>
+  <tr><td>3</td><td><code>Prod(Atomo('x'),Atomo('x')), 'x'</code></td><td><code>((1.0 * x) + (x * 1.0))</code></td><td>&#10003;</td></tr>
+  <tr><td>4</td><td><code>Prod(Atomo('x'),Atomo('x')), 'y'</code></td><td><code>((0.0 * x) + (x * 0.0))</code></td><td>&#10003;</td></tr>
+  <tr><td>5</td><td><code>Expo(Atomo('x'),Numero(3)), 'x'</code></td><td><code>((x ^ 3.0) * (((1.0 * 3.0) / x) + (0.0 * (lg(x)))))</code></td><td>&#10003;</td></tr>
+  <tr><td>6</td><td><code>Logaritmo(Atomo('x')), 'x'</code></td><td><code>(1.0 / x)</code></td><td>&#10003;</td></tr>
+</table>
+<p><em>Suficiencia:</em> se cubren todas las reglas del Cuadro 1 individualmente. Los casos 3 y 4 verifican la correcta distinci&oacute;n entre variable y constante &aacute;tomo.</p>
+
+<h3>2.2.3 Casos de prueba &mdash; <code>evaluar</code></h3>
+
+<table>
+  <tr><th>#</th><th>Entrada</th><th>v</th><th>Esperado</th><th>Obtenido</th><th>&#10003;</th></tr>
+  <tr><td>1</td><td><code>Numero(5.0), 'x'</code></td><td>1.0</td><td>5.0</td><td>5.0</td><td>&#10003;</td></tr>
+  <tr><td>2</td><td><code>Atomo('x'), 'x'</code></td><td>5.0</td><td>5.0</td><td>5.0</td><td>&#10003;</td></tr>
+  <tr><td>3</td><td><code>Suma(expr1, expr2), 'x'</code></td><td>5.0</td><td>32.0</td><td>32.0</td><td>&#10003;</td></tr>
+  <tr><td>4</td><td><code>Expo(expr1, expr2), 'x'</code></td><td>5.0</td><td>1.341&times;10<sup>21</sup></td><td>1.341&times;10<sup>21</sup></td><td>&#10003;</td></tr>
+  <tr><td>5</td><td><code>Logaritmo(expr1), 'x'</code></td><td>5.0</td><td>1.9459</td><td>1.9459</td><td>&#10003;</td></tr>
+  <tr><td>6</td><td><code>Div(expr1, expr2), 'x'</code></td><td>5.0</td><td>0.28</td><td>0.28</td><td>&#10003;</td></tr>
+</table>
+<p><em>Suficiencia:</em> se eval&uacute;an todos los operadores con un valor concreto. La exactitud de los resultados num&eacute;ricos (incluyendo el caso de exponenciaci&oacute;n con n&uacute;meros grandes) da confianza en la implementaci&oacute;n.</p>
+
+<h3>2.2.4 Casos de prueba &mdash; <code>limpiar</code></h3>
+
+<table>
+  <tr><th>#</th><th>Entrada</th><th>Esperado</th><th>Obtenido</th><th>&#10003;</th></tr>
+  <tr><td>1</td><td><code>Suma(Numero(0.0), Atomo('x'))</code></td><td><code>Atomo('x')</code></td><td><code>Atomo('x')</code></td><td>&#10003;</td></tr>
+  <tr><td>2</td><td><code>Prod(Numero(1.0), Atomo('x'))</code></td><td><code>Atomo('x')</code></td><td><code>Atomo('x')</code></td><td>&#10003;</td></tr>
+  <tr><td>3</td><td><code>Prod(Numero(0.0), Expo(Atomo('x'),Numero(3)))</code></td><td><code>Numero(0.0)</code></td><td><code>Numero(0.0)</code></td><td>&#10003;</td></tr>
+  <tr><td>4</td><td><code>Expo(Atomo('x'), Numero(0.0))</code></td><td><code>Numero(1.0)</code></td><td><code>Numero(1.0)</code></td><td>&#10003;</td></tr>
+  <tr><td>5</td><td><code>Resta(Atomo('x'), Numero(0.0))</code></td><td><code>Atomo('x')</code></td><td><code>Atomo('x')</code></td><td>&#10003;</td></tr>
+  <tr><td>6</td><td><code>limpiar(derivar(k + 3x, 'x'))</code></td><td><code>Numero(3.0)</code></td><td><code>Numero(3.0)</code></td><td>&#10003;</td></tr>
+</table>
+<p><em>Suficiencia:</em> se prueba cada identidad algebraica de simplificaci&oacute;n implementada. El caso 6 prueba la composici&oacute;n <code>limpiar ∘ derivar</code>, que es el uso principal de la funci&oacute;n en el contexto del taller.</p>
+
+<h3>2.2.5 Casos de prueba &mdash; <code>raizNewton</code></h3>
+
+<table>
+  <tr><th>#</th><th>Funci&oacute;n</th><th>x<sub>0</sub></th><th>Ra&iacute;z esperada</th><th>Ra&iacute;z obtenida</th><th>&#10003;</th></tr>
+  <tr><td>1</td><td><code>x&sup2; &minus; 2</code></td><td>2.0</td><td>&radic;2 &asymp; 1.4142</td><td>1.4142156862745099</td><td>&#10003;</td></tr>
+  <tr><td>2</td><td><code>x&sup2; &minus; 4</code></td><td>2.0</td><td>2.0</td><td>2.0</td><td>&#10003;</td></tr>
+  <tr><td>3</td><td><code>x&sup2; &minus; 4 + 3x</code></td><td>2.0</td><td>&asymp; 1.0</td><td>1.0000029768726761</td><td>&#10003;</td></tr>
+  <tr><td>4</td><td><code>x &minus; 5</code></td><td>1.0</td><td>5.0</td><td>&asymp; 5.0</td><td>&#10003;</td></tr>
+  <tr><td>5</td><td><code>x&sup3; &minus; 8</code></td><td>1.0</td><td>2.0</td><td>&asymp; 2.0</td><td>&#10003;</td></tr>
+</table>
+<p><em>Suficiencia:</em> los casos incluyen ra&iacute;ces irracionales (caso 1), ra&iacute;ces exactas (caso 2), polinomios de distintos grados y diferentes puntos iniciales. Los resultados son consistentes con los valores te&oacute;ricos conocidos. La precisi&oacute;n es la esperada para el criterio <code>ba</code> utilizado (<code>f(x) &lt; 0.001</code>). Se considera que los casos son suficientes para confiar en la correcci&oacute;n del m&eacute;todo para funciones diferenciables con ra&iacute;ces simples.</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>3. Conclusiones</h2>
+
+<p>En este taller se implement&oacute; el m&eacute;todo de Newton para encontrar ra&iacute;ces de funciones representadas como expresiones simb&oacute;licas de tipo <code>Expr</code>. La implementaci&oacute;n se realiz&oacute; completamente en estilo funcional puro: sin variables mutables, sin bucles imperativos y sin efectos secundarios.</p>
+
+<p>El reconocimiento de patrones result&oacute; ser la herramienta ideal para trabajar con tipos algebraicos como <code>Expr</code>. Al tener cada constructor del trait su propio caso en el <code>match</code>, el c&oacute;digo refleja directamente la definici&oacute;n matem&aacute;tica del problema. Esto facilita la verificaci&oacute;n formal por inducci&oacute;n estructural, ya que la estructura del c&oacute;digo coincide con la estructura de la prueba.</p>
+
+<p>Una limitaci&oacute;n observada es que la funci&oacute;n <code>limpiar</code> no realiza simplificaciones num&eacute;ricas (como reducir <code>Numero(3.0) + Numero(2.0)</code> a <code>Numero(5.0)</code>), lo cual podr&iacute;a mejorar la legibilidad de las expresiones derivadas. Asimismo, el m&eacute;todo de Newton puede no converger si el punto inicial est&aacute; lejos de la ra&iacute;z o si la derivada es cero en alg&uacute;n punto del camino, lo cual no es controlado por la implementaci&oacute;n actual.</p>
+
+<p>En conclusi&oacute;n, el paradigma funcional y el reconocimiento de patrones permiten escribir c&oacute;digo conciso, correcto y directamente vinculado a la teor&iacute;a matem&aacute;tica subyacente, lo cual es una ventaja significativa frente a los enfoques imperativos tradicionales.</p>
+
+</div>
+</body>
+</html>
